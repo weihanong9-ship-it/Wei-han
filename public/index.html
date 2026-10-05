@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FoodLoop</title>
+  <meta name="description" content="Track what's about to expire, cook it, or share it with neighbours.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥕</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">🥕</span>
+      <div>
+        <h1>FoodLoop</h1>
+        <p class="tagline">Eat it, cook it, or share it. Don't bin it.</p>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="pantry" aria-selected="true">My pantry</button>
+      <button role="tab" data-tab="recipes" aria-selected="false">Use it up</button>
+      <button role="tab" data-tab="share" aria-selected="false">Share board</button>
+      <button role="tab" data-tab="impact" aria-selected="false">Impact</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Pantry -->
+    <section id="tab-pantry" class="panel" role="tabpanel">
+      <div class="alert" id="pantry-alert" hidden></div>
+      <form id="pantry-form" class="card form-grid">
+        <h2 class="span-all">Add food</h2>
+        <label>Item<input name="name" required maxlength="80" placeholder="e.g. Spinach"></label>
+        <label>Best before / use by<input name="expiresOn" type="date" required></label>
+        <label>Category<select name="category" class="category-select"></select></label>
+        <label>Weight (kg)<input name="weightKg" type="number" step="0.05" min="0.05" max="100" placeholder="0.3"></label>
+        <label>Price paid<input name="price" type="number" step="0.01" min="0" placeholder="0.00"></label>
+        <button class="primary" type="submit">Add</button>
+        <p class="error span-all" id="pantry-error" role="alert"></p>
+      </form>
+      <div id="pantry-list" class="list"></div>
+    </section>
+
+    <!-- Recipes -->
+    <section id="tab-recipes" class="panel" role="tabpanel" hidden>
+      <p class="hint">Recipes that use the food expiring in the next 5 days. The most urgent food is listed first.</p>
+      <div id="recipe-list" class="list"></div>
+    </section>
+
+    <!-- Share board -->
+    <section id="tab-share" class="panel" role="tabpanel" hidden>
+      <form id="listing-form" class="card form-grid">
+        <h2 class="span-all">Offer surplus food</h2>
+        <label>What is it?<input name="title" required maxlength="80" placeholder="e.g. 6 bagels"></label>
+        <label>Good until<input name="expiresOn" type="date" required></label>
+        <label>Pickup location<input name="location" required maxlength="120" placeholder="e.g. 12 Oak St lobby"></label>
+        <label>Pickup window<input name="pickupWindow" maxlength="60" placeholder="e.g. Today 5–8pm"></label>
+        <label>Your name / shop<input name="donor" maxlength="60" placeholder="A neighbour"></label>
+        <label>Category<select name="category" class="category-select"></select></label>
+        <label class="span-all">Notes<textarea name="description" maxlength="400" rows="2" placeholder="Allergens, quantity, condition…"></textarea></label>
+        <button class="primary" type="submit">Post listing</button>
+        <p class="error span-all" id="listing-error" role="alert"></p>
+      </form>
+      <h2>Available near you</h2>
+      <div id="listing-list" class="list"></div>
+    </section>
+
+    <!-- Impact -->
+    <section id="tab-impact" class="panel" role="tabpanel" hidden>
+      <div id="stats" class="stats"></div>
+      <p class="hint">CO₂e is estimated at 2.5 kg per kg of food saved, a rough average across food types.</p>
+    </section>
+  </main>
+
+  <dialog id="share-dialog">
+    <form method="dialog" id="share-form" class="form-grid">
+      <h2 class="span-all">Share "<span id="share-name"></span>"</h2>
+      <label class="span-all">Pickup location<input name="location" required maxlength="120"></label>
+      <label>Pickup window<input name="pickupWindow" maxlength="60"></label>
+      <label>Your name<input name="donor" maxlength="60" placeholder="A neighbour"></label>
+      <p class="error span-all" id="share-error" role="alert"></p>
+      <div class="span-all row-end">
+        <button type="button" id="share-cancel">Cancel</button>
+        <button class="primary" type="submit">Post to share board</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
