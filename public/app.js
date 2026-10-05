@@ -112,7 +112,8 @@ async function loadPantry() {
         el('div', { className: 'item-title' }, item.name,
           el('span', { className: `badge ${item.urgency}` }, URGENCY_LABEL[item.urgency])),
         el('div', { className: 'item-meta' },
-          `${describeDays(item.daysLeft)} · ${item.category} · ${item.weightKg} kg`)),
+          `${describeDays(item.daysLeft)} · ${item.category} · ${item.weightKg} kg`
+          + `${item.nutrition ? ` · ~${item.nutrition.amount.kcal} kcal` : ''}`)),
       el('div', { className: 'actions' },
         el('button', { type: 'button', onclick: () => resolve(item.id, 'eaten') }, '✓ Eaten'),
         item.daysLeft >= 0 && el('button', { type: 'button', onclick: () => openShare(item) }, '🤝 Share'),
@@ -186,6 +187,68 @@ loaders.recipes = async function loadRecipes() {
   }
 };
 
+/* ---------- Nutrition ---------- */
+
+const NUTRIENT_LABELS = [['kcal', 'kcal', ''], ['protein', 'Protein', ' g'], ['carbs', 'Carbs', ' g'], ['fat', 'Fat', ' g'], ['fibre', 'Fibre', ' g']];
+let nutritionReference = [];
+
+function nutrientLine(amount) {
+  return el('div', { className: 'nutrients' },
+    NUTRIENT_LABELS.map(([key, label, unit]) => el('span', {}, `${label} `, el('b', {}, `${amount[key]}${unit}`))));
+}
+
+function renderReference() {
+  const query = $('#nutrition-search').value.trim().toLowerCase();
+  const rows = nutritionReference.filter((r) => !query
+    || r.food.toLowerCase().includes(query)
+    || r.highlights.some((h) => h.toLowerCase().includes(query)));
+  const body = $('#nutrition-reference');
+  if (!rows.length) {
+    body.replaceChildren(el('tr', {}, el('td', { colspan: '7', className: 'empty' }, 'No foods match your search.')));
+    return;
+  }
+  body.replaceChildren(...rows.map((r) => el('tr', {},
+    el('td', {}, r.food),
+    NUTRIENT_LABELS.map(([key]) => el('td', {}, r.per100g[key])),
+    el('td', {}, r.highlights.join(', ') || '–'))));
+}
+
+$('#nutrition-search').addEventListener('input', renderReference);
+
+loaders.nutrition = async function loadNutrition() {
+  const data = await api('/api/nutrition');
+  nutritionReference = data.reference;
+  renderReference();
+
+  $('#nutrition-totals').replaceChildren(...NUTRIENT_LABELS.map(([key, label, unit]) => el('div', { className: 'stat' },
+    el('div', { className: 'stat-value' }, `${data.totals[key]}${unit}`),
+    el('div', { className: 'stat-label' }, key === 'kcal' ? 'calories in your pantry' : label))));
+  // 2,000 kcal is the common reference daily intake for an adult.
+  $('#nutrition-days').textContent = data.items.length
+    ? `That's about ${Math.round((data.totals.kcal / 2000) * 10) / 10} days of energy for one adult. Every item you rescue is real nourishment, not just waste avoided.`
+    : '';
+
+  const list = $('#nutrition-items');
+  list.replaceChildren();
+  if (!data.items.length) {
+    list.append(el('p', { className: 'empty' }, 'Add food to your pantry to see its nutrition here.'));
+  }
+  for (const item of data.items) {
+    list.append(el('div', { className: 'item', dataset: { urgency: item.urgency } },
+      el('div', { className: 'item-main' },
+        el('div', { className: 'item-title' }, item.name,
+          el('span', { className: `badge ${item.urgency}` }, URGENCY_LABEL[item.urgency])),
+        el('div', { className: 'item-meta' }, `${item.weightKg} kg · counted as ${item.nutrition.food} · ${describeDays(item.daysLeft)}`),
+        nutrientLine(item.nutrition.amount),
+        item.nutrition.highlights.length > 0 && el('div', { className: 'uses' },
+          'Good source of: ', item.nutrition.highlights.map((h) => el('span', { className: 'chip' }, h))))));
+  }
+
+  const unmatched = $('#nutrition-unmatched');
+  unmatched.hidden = data.unmatched.length === 0;
+  unmatched.textContent = `No nutrition data yet for: ${data.unmatched.join(', ')}.`;
+};
+
 /* ---------- Share board ---------- */
 
 loaders.share = async function loadListings() {
@@ -242,6 +305,7 @@ loaders.impact = async function loadStats() {
     [s.rescueRate === null ? '–' : `${s.rescueRate}%`, 'of tracked food rescued'],
     [`${s.savedKg} kg`, 'food eaten or shared'],
     [`${s.co2eSavedKg} kg`, 'CO₂e avoided (est.)'],
+    [s.kcalSaved.toLocaleString(), 'calories rescued (est.)'],
     [s.savedMoney.toFixed(2), 'money not wasted'],
     [s.shared, 'items shared'],
     [s.communityMealsShared, 'share-board pickups'],

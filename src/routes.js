@@ -1,9 +1,9 @@
 // The FoodLoop API, independent of transport. The Node server calls it over
 // HTTP; the static GitHub Pages build calls it directly in the browser.
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./logic'), require('./recipes'));
-  else root.FoodLoopRoutes = factory(root.FoodLoopLogic, root.FoodLoopRecipes);
-}(typeof self !== 'undefined' ? self : this, function (logic, recipes) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./logic'), require('./recipes'), require('./nutrition'));
+  else root.FoodLoopRoutes = factory(root.FoodLoopLogic, root.FoodLoopRecipes, root.FoodLoopNutrition);
+}(typeof self !== 'undefined' ? self : this, function (logic, recipes, nutritionTable) {
   'use strict';
 
   class HttpError extends Error {
@@ -21,17 +21,22 @@
 
   // `store` must provide list/find/insert/update/remove; `now` returns a Date.
   function createRoutes({ store, now = () => new Date() }) {
+    const decorate = (item) => ({
+      ...logic.decoratePantryItem(item, now()),
+      nutrition: logic.nutritionFor(item, nutritionTable),
+    });
+
     // Each route: [method, pattern, handler(params, body, searchParams)].
     // A handler returns a payload (status 200) or [status, payload].
     const routes = [
       ['GET', /^\/api\/pantry$/, (p, b, query) => {
         const showAll = query.get('all') === '1';
         const items = store.list('pantry').filter((i) => showAll || !i.outcome);
-        return logic.sortByExpiry(items).map((i) => logic.decoratePantryItem(i, now()));
+        return logic.sortByExpiry(items).map(decorate);
       }],
       ['POST', /^\/api\/pantry$/, (p, body) => {
         const value = validated(logic.validatePantryItem(body));
-        return [201, logic.decoratePantryItem(store.insert('pantry', { ...value, outcome: null }), now())];
+        return [201, decorate(store.insert('pantry', { ...value, outcome: null }))];
       }],
       ['PATCH', /^\/api\/pantry\/([\w-]+)$/, ([id], body) => {
         const item = store.find('pantry', id);
@@ -41,7 +46,7 @@
         }
         if (item.outcome) throw new HttpError(409, 'Item already resolved');
         const updated = store.update('pantry', id, { outcome: body.outcome, resolvedAt: now().toISOString() });
-        return logic.decoratePantryItem(updated, now());
+        return decorate(updated);
       }],
       ['DELETE', /^\/api\/pantry\/([\w-]+)$/, ([id]) => {
         if (!store.remove('pantry', id)) throw new HttpError(404, 'Item not found');
@@ -82,7 +87,23 @@
       ['GET', /^\/api\/stats$/, () => {
         const stats = logic.computeStats(store.list('pantry'));
         stats.communityMealsShared = store.list('listings').filter((l) => l.status === 'claimed').length;
+        const rescued = store.list('pantry').filter((i) => i.outcome === 'eaten' || i.outcome === 'shared');
+        stats.kcalSaved = logic.sumNutrition(rescued
+          .map((i) => logic.nutritionFor(i, nutritionTable))
+          .filter(Boolean)
+          .map((n) => n.amount)).kcal;
         return stats;
+      }],
+      // Nutrition for the active pantry, plus the full per-100 g reference list.
+      ['GET', /^\/api\/nutrition$/, () => {
+        const items = logic.sortByExpiry(store.list('pantry').filter((i) => !i.outcome)).map(decorate);
+        const matched = items.filter((i) => i.nutrition);
+        return {
+          items: matched,
+          unmatched: items.filter((i) => !i.nutrition).map((i) => i.name),
+          totals: logic.sumNutrition(matched.map((i) => i.nutrition.amount)),
+          reference: nutritionTable.map(({ food, per100g, highlights }) => ({ food, per100g, highlights })),
+        };
       }],
       ['GET', /^\/api\/meta$/, () => ({ categories: logic.CATEGORIES, outcomes: logic.OUTCOMES })],
     ];

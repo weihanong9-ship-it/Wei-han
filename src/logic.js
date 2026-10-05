@@ -178,6 +178,46 @@
     return scored.slice(0, limit);
   }
 
+  const NUTRIENTS = ['kcal', 'protein', 'carbs', 'fat', 'fibre'];
+
+  // Finds the nutrition row for an item name. Longer aliases are tried first,
+  // so "Sweet potatoes" matches "sweet potato" rather than "potato".
+  function findNutrition(name, table) {
+    let best = null;
+    let bestLength = 0;
+    for (const row of table) {
+      for (const alias of row.aliases) {
+        const length = alias.split(/\s+/).length;
+        if (length > bestLength && itemMatchesIngredient(name, alias)) {
+          best = row;
+          bestLength = length;
+        }
+      }
+    }
+    return best;
+  }
+
+  // Nutrition for the whole item, scaled from per-100 g values by its weight.
+  function nutritionFor(item, table) {
+    const row = findNutrition(item.name, table);
+    if (!row) return null;
+    const factor = (item.weightKg * 1000) / 100;
+    const amount = {};
+    for (const key of NUTRIENTS) {
+      amount[key] = key === 'kcal' ? Math.round(row.per100g[key] * factor) : round(row.per100g[key] * factor);
+    }
+    return { food: row.food, amount, highlights: row.highlights };
+  }
+
+  function sumNutrition(amounts) {
+    const total = Object.fromEntries(NUTRIENTS.map((k) => [k, 0]));
+    for (const amount of amounts) {
+      for (const key of NUTRIENTS) total[key] += amount[key];
+    }
+    for (const key of NUTRIENTS) total[key] = key === 'kcal' ? Math.round(total[key]) : round(total[key]);
+    return total;
+  }
+
   function isListingVisible(listing, now) {
     return listing.status === 'available' && daysUntil(listing.expiresOn, now) >= 0;
   }
@@ -198,5 +238,9 @@
     itemMatchesIngredient,
     suggestRecipes,
     isListingVisible,
+    NUTRIENTS,
+    findNutrition,
+    nutritionFor,
+    sumNutrition,
   };
 }));

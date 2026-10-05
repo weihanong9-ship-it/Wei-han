@@ -12,6 +12,7 @@ const SHARED_FILES = {
   'lib/logic.js': path.join(__dirname, 'src', 'logic.js'),
   'lib/recipes.js': path.join(__dirname, 'src', 'recipes.js'),
   'lib/routes.js': path.join(__dirname, 'src', 'routes.js'),
+  'lib/nutrition.js': path.join(__dirname, 'src', 'nutrition.js'),
 };
 const MAX_BODY_BYTES = 16 * 1024;
 const MIME = {

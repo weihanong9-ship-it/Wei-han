@@ -11,7 +11,7 @@ const out = path.join(root, '_site');
 fs.rmSync(out, { recursive: true, force: true });
 fs.cpSync(path.join(root, 'public'), out, { recursive: true });
 fs.mkdirSync(path.join(out, 'lib'));
-for (const name of ['logic.js', 'recipes.js', 'routes.js']) {
+for (const name of ['logic.js', 'recipes.js', 'nutrition.js', 'routes.js']) {
   fs.copyFileSync(path.join(root, 'src', name), path.join(out, 'lib', name));
 }
 // Serve files as-is (no Jekyll processing).

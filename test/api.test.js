@@ -110,3 +110,22 @@ test('error handling: bad JSON, unknown routes, wrong methods, path traversal', 
   const traversal = await fetch(`${base}/..%2fpackage.json`);
   assert.ok([403, 404].includes(traversal.status));
 }));
+
+test('nutrition endpoint totals the active pantry and flags unknown foods', () => withServer(async (call) => {
+  const item = await call('POST', '/api/pantry', { name: 'Bananas', expiresOn: '2026-10-06', weightKg: 1 });
+  assert.equal(item.body.nutrition.amount.kcal, 890);
+  await call('POST', '/api/pantry', { name: 'Chicken breast', expiresOn: '2026-10-07', weightKg: 0.5 });
+  await call('POST', '/api/pantry', { name: 'Mystery leftovers', expiresOn: '2026-10-07' });
+
+  const res = await call('GET', '/api/nutrition');
+  assert.equal(res.status, 200);
+  assert.deepEqual(res.body.items.map((i) => i.nutrition.food), ['Banana', 'Chicken']);
+  assert.deepEqual(res.body.unmatched, ['Mystery leftovers']);
+  assert.equal(res.body.totals.kcal, 890 + 600);
+  assert.equal(res.body.totals.protein, 11 + 112.5);
+  assert.ok(res.body.reference.length > 40);
+
+  await call('PATCH', `/api/pantry/${item.body.id}`, { outcome: 'eaten' });
+  assert.equal((await call('GET', '/api/stats')).body.kcalSaved, 890);
+  assert.equal((await call('GET', '/api/nutrition')).body.items.length, 1);
+}));

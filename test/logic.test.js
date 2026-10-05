@@ -96,3 +96,33 @@ test('isListingVisible hides claimed and expired listings', () => {
   assert.ok(!logic.isListingVisible({ status: 'claimed', expiresOn: '2026-10-06' }, NOW));
   assert.ok(!logic.isListingVisible({ status: 'available', expiresOn: '2026-10-04' }, NOW));
 });
+
+const nutrition = require('../src/nutrition');
+
+test('findNutrition prefers the most specific alias', () => {
+  assert.equal(logic.findNutrition('Sweet potatoes', nutrition).food, 'Sweet potato');
+  assert.equal(logic.findNutrition('Potatoes', nutrition).food, 'Potato');
+  assert.equal(logic.findNutrition('Coconut milk', nutrition).food, 'Coconut milk');
+  assert.equal(logic.findNutrition('Semi-skimmed milk', nutrition).food, 'Milk (whole)');
+  assert.equal(logic.findNutrition('Greek yoghurt', nutrition).food, 'Greek yoghurt');
+  assert.equal(logic.findNutrition('Peanut butter', nutrition).food, 'Peanut butter');
+  assert.equal(logic.findNutrition('Pears', nutrition).food, 'Pear');
+  assert.equal(logic.findNutrition('Mystery leftovers', nutrition), null);
+});
+
+test('nutritionFor scales per-100 g values by item weight, sumNutrition adds them up', () => {
+  const banana = logic.nutritionFor({ name: 'Bananas', weightKg: 0.5 }, nutrition);
+  assert.equal(banana.food, 'Banana');
+  assert.deepEqual(banana.amount, { kcal: 445, protein: 5.5, carbs: 114, fat: 1.5, fibre: 13 });
+  const spinach = logic.nutritionFor({ name: 'Spinach', weightKg: 0.2 }, nutrition);
+  assert.deepEqual(logic.sumNutrition([banana.amount, spinach.amount]),
+    { kcal: 491, protein: 11.3, carbs: 121.2, fat: 2.3, fibre: 17.4 });
+  assert.deepEqual(logic.sumNutrition([]), { kcal: 0, protein: 0, carbs: 0, fat: 0, fibre: 0 });
+});
+
+test('nutrition table rows are complete', () => {
+  for (const row of nutrition) {
+    assert.ok(row.food && row.aliases.length, `${row.food} needs aliases`);
+    for (const key of logic.NUTRIENTS) assert.equal(typeof row.per100g[key], 'number', `${row.food}.${key}`);
+  }
+});

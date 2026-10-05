@@ -20,6 +20,7 @@
     <nav class="tabs" role="tablist">
       <button role="tab" data-tab="pantry" aria-selected="true">My pantry</button>
       <button role="tab" data-tab="recipes" aria-selected="false">Use it up</button>
+      <button role="tab" data-tab="nutrition" aria-selected="false">Nutrition</button>
       <button role="tab" data-tab="share" aria-selected="false">Share board</button>
       <button role="tab" data-tab="impact" aria-selected="false">Impact</button>
     </nav>
@@ -49,6 +50,28 @@
     <section id="tab-recipes" class="panel" role="tabpanel" hidden>
       <p class="hint">Recipes that use the food expiring in the next 5 days. The most urgent food is listed first.</p>
       <div id="recipe-list" class="list"></div>
+    </section>
+
+    <!-- Nutrition -->
+    <section id="tab-nutrition" class="panel" role="tabpanel" hidden>
+      <h2>What's in your pantry</h2>
+      <div id="nutrition-totals" class="stats"></div>
+      <p class="hint" id="nutrition-days"></p>
+      <div id="nutrition-items" class="list"></div>
+      <p class="hint" id="nutrition-unmatched" hidden></p>
+
+      <h2 class="section-gap">Nutrition list (per 100 g)</h2>
+      <label class="search">Search foods<input id="nutrition-search" type="search" placeholder="e.g. spinach"></label>
+      <div class="table-wrap">
+        <table class="nutrition-table">
+          <thead>
+            <tr><th scope="col">Food</th><th scope="col">kcal</th><th scope="col">Protein</th><th scope="col">Carbs</th><th scope="col">Fat</th><th scope="col">Fibre</th><th scope="col">Good source of</th></tr>
+          </thead>
+          <tbody id="nutrition-reference"></tbody>
+        </table>
+      </div>
+      <p class="hint">Values are approximate averages for raw food (grains and pulses cooked), in grams unless marked kcal.
+        Item amounts use the weight you entered. This is general information, not dietary advice.</p>
     </section>
 
     <!-- Share board -->
@@ -92,6 +115,7 @@
 
   <script src="lib/logic.js"></script>
   <script src="lib/recipes.js"></script>
+  <script src="lib/nutrition.js"></script>
   <script src="lib/routes.js"></script>
   <script src="local-api.js"></script>
   <script src="app.js"></script>

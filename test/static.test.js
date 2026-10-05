@@ -23,7 +23,7 @@ function loadStaticBuild(storage = new Map()) {
   window.self = window;
   window.window = window;
   const context = vm.createContext(window);
-  for (const file of ['lib/logic.js', 'lib/recipes.js', 'lib/routes.js', 'local-api.js']) {
+  for (const file of ['lib/logic.js', 'lib/recipes.js', 'lib/nutrition.js', 'lib/routes.js', 'local-api.js']) {
     vm.runInContext(fs.readFileSync(path.join(root, '_site', file), 'utf8'), context, { filename: file });
   }
   // Copy results out of the sandbox so assertions compare plain Node values.
