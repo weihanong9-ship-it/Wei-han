@@ -18,8 +18,25 @@ function el(tag, props = {}, ...children) {
   return node;
 }
 
+// 'server' when a FoodLoop server answers; 'local' on static hosting (GitHub Pages).
+let mode = 'server';
+
+async function detectMode() {
+  if (location.hostname.endsWith('.github.io')) return 'local';
+  try {
+    const res = await fetch('api/meta', { cache: 'no-store' });
+    const isJson = (res.headers.get('Content-Type') || '').includes('application/json');
+    if (res.ok && isJson) return 'server';
+  } catch { /* no server reachable */ }
+  return 'local';
+}
+
 async function api(path, options = {}) {
-  const res = await fetch(path, {
+  if (mode === 'local') {
+    return window.FoodLoopLocal.request(options.method || 'GET', path, options.body);
+  }
+  // Relative URL so the app also works when hosted under a sub-path.
+  const res = await fetch(path.replace(/^\//, ''), {
     ...options,
     headers: options.body ? { 'Content-Type': 'application/json' } : undefined,
     body: options.body ? JSON.stringify(options.body) : undefined,
@@ -239,6 +256,8 @@ loaders.impact = async function loadStats() {
 /* ---------- Init ---------- */
 
 (async function init() {
+  mode = await detectMode();
+  $('#local-banner').hidden = mode !== 'local';
   const meta = await api('/api/meta');
   document.querySelectorAll('.category-select').forEach((select) => {
     select.replaceChildren(...meta.categories.map((c) => el('option', { value: c }, c)));

@@ -26,6 +26,9 @@
   </header>
 
   <main>
+    <p id="local-banner" class="hint" hidden>
+      Demo mode: your data is saved in this browser only, so the share board shows only your own posts.
+    </p>
     <!-- Pantry -->
     <section id="tab-pantry" class="panel" role="tabpanel">
       <div class="alert" id="pantry-alert" hidden></div>
@@ -87,6 +90,10 @@
     </form>
   </dialog>
 
+  <script src="lib/logic.js"></script>
+  <script src="lib/recipes.js"></script>
+  <script src="lib/routes.js"></script>
+  <script src="local-api.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

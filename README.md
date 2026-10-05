@@ -12,25 +12,41 @@ source. Food usually gets binned for three simple reasons:
 | *"I have too much and can't finish it."* | **Share board**: post surplus food (from a household, café or shop) with a pickup place and time. Neighbours claim it in one tap. Any pantry item can be shared directly. |
 | *"Does it even matter?"* | **Impact**: your rescue rate, kg of food saved, estimated CO₂e avoided, money not wasted and community pickups. |
 
+**Live demo:** https://weihanong9-ship-it.github.io/Wei-han/
+
 ## Run it
 
 Requires Node.js 18+. There are no dependencies to install.
 
 ```bash
 npm start            # http://localhost:3000
-npm test             # 14 unit + API tests
+npm test             # 15 unit, API and static-build tests
 ```
 
 Environment variables: `PORT` (default `3000`) and `DATA_FILE` (default `data/db.json`).
+
+## Deploy on GitHub Pages
+
+`.github/workflows/pages.yml` runs the tests, builds a static copy (`npm run build` → `_site/`) and
+publishes it on every push. GitHub Pages can't run the Node server, so in the static build the browser runs
+the same API itself (`public/local-api.js`) and saves data in `localStorage`. On the static site, data stays on
+each visitor's device, so the share board only shows your own posts. For a shared board, run the Node server
+on a host such as Render, Railway or Fly.io.
+
+One-time setup: in the repository go to **Settings → Pages → Build and deployment → Source** and pick
+**GitHub Actions**. Then re-run the workflow from the **Actions** tab.
 
 ## How it's built
 
 ```
 server.js          HTTP server: JSON API + static files (Node built-ins only)
+src/routes.js      The API routes, shared by the server and the static (Pages) build
 src/logic.js       Pure business rules: expiry/urgency, validation, stats, recipe matching
 src/recipes.js     Built-in "use-it-up" recipes
 src/store.js       JSON-file persistence with atomic writes
 public/            Mobile-first web UI (vanilla JS, light/dark mode)
+public/local-api.js  Runs the API in the browser with localStorage when there is no server
+scripts/build-static.js  Builds the GitHub Pages site into _site/
 test/              node:test suites for the logic and the HTTP API
 ```
 
